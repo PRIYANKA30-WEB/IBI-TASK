@@ -1,0 +1,786 @@
+/*1.DATA ACQUISITION AND UNDERSTANDING*/
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+file_path = "customer_churn_data.csv"
+df = pd.read_csv(file_path)
+
+# Detailed Analysis of the Dataset
+print("-Dataset Overview -")
+
+# This includes the number of entries, columns, non-null values, and data types.
+print("\nDataset Information:")
+df.info()
+
+# Display the first 5 rows of the dataset to get a glimpse of the data
+print("\nFirst 5 rows of the dataset:")
+print(df.head())
+
+# Display the shape of the dataset (number of rows, number of columns)
+print(f"\nDataset Shape: {df.shape[0]} rows, {df.shape[1]} columns")
+
+# Missing Data Analysis
+
+print("\n--- Missing Data Analysis ---")
+
+# Calculate the count of missing values for each column
+missing_data_counts = df.isnull().sum()
+
+# Filter and display only columns with missing values
+print("\nMissing data counts (if any):")
+print(missing_data_counts[missing_data_counts > 0])
+
+# Calculate the percentage of missing values for each column
+missing_percentage = (df.isnull().sum() / len(df)) * 100
+
+# Filter and display percentages for columns with missing values
+print("\nMissing data percentages (if any):")
+print(missing_percentage[missing_percentage > 0])
+
+if missing_data_counts.sum() == 0:
+    print("\nNo missing values found in the dataset.")
+else:
+    print("\nMissing values are present in the dataset. Consider imputation or removal strategies.")
+
+# Feature Distribution
+print("\n Feature Distribution Analysis")
+
+# Iterate through each column to analyze its distribution
+for column in df.columns:
+    print(f"\n Distribution for column: {column} ")
+
+    # Check if the column is numerical
+    if pd.api.types.is_numeric_dtype(df[column]):
+        print(f"Type: Numerical (Integer or Float)")
+        # Display descriptive statistics for numerical features
+        print(df[column].describe())
+
+
+  # Check if the column is categorical (object type)
+    elif pd.api.types.is_object_dtype(df[column]):
+        print(f"Type: Categorical (Object)")
+        # Display value counts for categorical features
+        print(df[column].value_counts())
+        print(f"Number of unique categories: {df[column].nunique()}")
+
+        # plt.show()
+    else:
+        print(f"Type: Other (not numerical or categorical object): {df[column].dtype}")
+
+# Correlation Analysis
+
+print("\n Correlation Analysis (for Numerical Features)")
+
+# Select only numerical columns for correlation calculation
+numerical_df = df.select_dtypes(include=['number'])
+
+if not numerical_df.empty:
+    # Calculate the pairwise correlation between numerical columns
+    correlation_matrix = numerical_df.corr()
+    print("\nCorrelation Matrix:")
+    print(correlation_matrix)
+
+# plt.show()
+else:
+    print("No numerical features found for correlation analysis.")
+
+
+
+
+/*2.DATA PREPROCESSING */
+  import pandas as pd
+  from sklearn.preprocessing import StandardScaler
+
+# Load the dataset
+file_path = "customer_churn_data.csv"
+df = pd.read_csv(file_path)
+
+# Missing Data Handling (Clarification)
+print("--- Missing Data Handling ---")
+missing_data_counts = df.isnull().sum()
+if missing_data_counts.sum() == 0:
+    print("\nAs observed,there are NO missing values in the dataset.")
+    print("applying imputation techniques is not necessary for this dataset.")
+else:
+    print("\nMissing values detected. Applying imputation techniques as requested.")
+   
+
+# Feature Scaling using StandardScaler 
+print("\n Feature Scaling using StandardScaler")
+
+# Identify numerical columns for scaling
+# CustomerID is typically an identifier and might not need scaling for ML models.
+numerical_features = ['Age', 'Tenure', 'MonthlyCharges', 'TotalCharges']
+numerical_features = [col for col in numerical_features if col in df.columns and pd.api.types.is_numeric_dtype(df[col])]
+
+if numerical_features:
+    print(f"\nApplying StandardScaler to the following numerical features: {numerical_features}")
+
+    # Initialize the StandardScaler
+    scaler = StandardScaler()
+
+    # Apply scaling to the selected numerical features
+    df[numerical_features] = scaler.fit_transform(df[numerical_features])
+
+    print("\nFirst 5 rows of the DataFrame after scaling numerical features:")
+    print(df.head())
+
+    print("\nDescriptive statistics of scaled numerical features:")
+    print(df[numerical_features].describe())
+else:
+    print("\nNo numerical features found for scaling ")
+
+print("\n--- End of Data Preprocessing ---")
+# converting categorical values
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+import numpy as np 
+
+# Identify Categorical and Numerical Features
+# The target variable is likely 'Churn' 
+
+target_variable = 'Churn'
+
+# Separate features (X) and target (y)
+if target_variable not in df.columns:
+    print(f"Error: Target variable '{target_variable}' not found in DataFrame columns.")
+else:
+    X = df.drop(columns=[target_variable])
+    y = df[target_variable]
+    y_encoded = y.map({'No': 0, 'Yes': 1})
+
+
+    # Identify categorical columns (excluding the target)
+    categorical_features = X.select_dtypes(include=['object']).columns
+
+    # Identify numerical columns
+    numerical_features = X.select_dtypes(include=['number']).columns
+    # If 'CustomerID' is still in numerical_features, remove it:
+    if 'CustomerID' in numerical_features:
+        numerical_features = numerical_features.drop('CustomerID')
+
+
+    print(f"\nCategorical features to encode: {list(categorical_features)}")
+    print(f"Numerical features: {list(numerical_features)}")
+
+
+    # Apply One-Hot Encoding to Categorical Features
+    # OneHotEncoder will convert categorical variables into a numerical representation
+       preprocessor = ColumnTransformer(
+        transformers=[
+            ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
+        ],
+        remainder='passthrough'
+    )
+
+    # Apply the preprocessing steps to the features
+      X_processed = preprocessor.fit_transform(X)
+
+    print("\nShape of features after one-hot encoding:", X_processed.shape)
+
+
+    # Split Data into Training and Testing Sets
+
+    # Split the data into training and testing 
+    # Use the encoded target variable y_encoded
+    X_train, X_test, y_train, y_test = train_test_split(X_processed, y_encoded, test_size=0.2, random_state=42)
+
+    print(f"\nShape of training features (X_train): {X_train.shape}")
+    print(f"Shape of testing features (X_test): {X_test.shape}")
+    print(f"Shape of training target (y_train): {y_train.shape}")
+    print(f"Shape of testing target (y_test): {y_test.shape}")
+    print("\n--- Data Encoding and Splitting Complete ---")
+
+
+/*3.MODEL SELECTION AND TRAINING*/
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Assuming X_train, X_test, y_train, y_test 
+
+print("Training and Hyperparameter Tuning of Models ")
+
+# Logistic Regression
+print("\n Logistic Regression")
+logistic_model = LogisticRegression(max_iter=1000) 
+param_grid_lr = {'C': [0.001, 0.01, 0.1, 1, 10, 100]}
+
+# Perform GridSearchCV
+grid_search_lr = GridSearchCV(logistic_model, param_grid_lr, cv=5, scoring='accuracy')
+grid_search_lr.fit(X_train, y_train)
+
+print("Best parameters for Logistic Regression:", grid_search_lr.best_params_)
+print("Best cross-validation score for Logistic Regression:", grid_search_lr.best_score_)
+
+# Evaluate the best model on the test set
+best_lr_model = grid_search_lr.best_estimator_
+y_pred_lr = best_lr_model.predict(X_test)
+print("Logistic Regression Test Accuracy:", accuracy_score(y_test, y_pred_lr))
+print("Classification Report for Logistic Regression:")
+print(classification_report(y_test, y_pred_lr))
+print("Confusion Matrix for Logistic Regression:")
+print(confusion_matrix(y_test, y_pred_lr))
+
+
+#  Support Vector Machine (SVM)
+   print("\n Support Vector Machine (SVM)")
+# svm_model = SVC()
+  svm_model = SVC()
+param_grid_svm = {'C': [1, 10], 'kernel': ['rbf'], 'gamma': ['scale']} 
+
+# Perform GridSearchCV
+grid_search_svm = GridSearchCV(svm_model, param_grid_svm, cv=3, scoring='accuracy')
+grid_search_svm.fit(X_train, y_train)
+
+print("Best parameters for SVM:", grid_search_svm.best_params_)
+print("Best cross-validation score for SVM:", grid_search_svm.best_score_)
+
+# Evaluate the best model on the test set
+best_svm_model = grid_search_svm.best_estimator_
+y_pred_svm = best_svm_model.predict(X_test)
+print("SVM Test Accuracy:", accuracy_score(y_test, y_pred_svm))
+print("Classification Report for SVM:")
+print(classification_report(y_test, y_pred_svm))
+print("Confusion Matrix for SVM:")
+print(confusion_matrix(y_test, y_pred_svm))
+
+
+# Random Forest Classifier 
+print("\n Random Forest Classifier")
+# Define the model
+rf_model = RandomForestClassifier(random_state=42)
+param_grid_rf = {
+    'n_estimators': [100, 200], # Reduced for quicker run
+    'max_depth': [None, 10, 20], # Reduced for quicker run
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2]
+}
+
+# Perform GridSearchCV
+grid_search_rf = GridSearchCV(rf_model, param_grid_rf, cv=3, scoring='accuracy') # 
+grid_search_rf.fit(X_train, y_train)
+
+print("Best parameters for Random Forest:", grid_search_rf.best_params_)
+print("Best cross-validation score for Random Forest:", grid_search_rf.best_score_)
+
+# Evaluate the best model on the test set
+best_rf_model = grid_search_rf.best_estimator_
+y_pred_rf = best_rf_model.predict(X_test)
+print("Random Forest Test Accuracy:", accuracy_score(y_test, y_pred_rf))
+print("Classification Report for Random Forest:")
+print(classification_report(y_test, y_pred_rf))
+print("Confusion Matrix for Random Forest:")
+print(confusion_matrix(y_test, y_pred_rf))
+
+
+#  XGBoost Classifier
+print("\n--- XGBoost Classifier ---")
+xgb_model = XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
+param_grid_xgb = {
+    'n_estimators': [100, 200], # Reduced for quicker run
+    'learning_rate': [0.01, 0.1], # Reduced for quicker run
+    'max_depth': [3, 5],
+    'subsample': [0.8, 1.0],
+    'colsample_bytree': [0.8, 1.0]
+}
+
+
+# Perform GridSearchCV
+grid_search_xgb = GridSearchCV(xgb_model, param_grid_xgb, cv=3, scoring='accuracy')
+grid_search_xgb.fit(X_train, y_train)
+
+print("Best parameters for XGBoost:", grid_search_xgb.best_params_)
+print("Best cross-validation score for XGBoost:", grid_search_xgb.best_score_)
+
+# Evaluate the best model on the test set
+best_xgb_model = grid_search_xgb.best_estimator_
+y_pred_xgb = best_xgb_model.predict(X_test)
+print("XGBoost Test Accuracy:", accuracy_score(y_test, y_pred_xgb))
+print("Classification Report for XGBoost:")
+print(classification_report(y_test, y_pred_xgb))
+print("Confusion Matrix for XGBoost:")
+print(confusion_matrix(y_test, y_pred_xgb))
+
+print("\n Model Training and Tuning Complete")
+
+
+
+
+/*4.MODEL EVALUATION */
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc, f1_score, recall_score
+import matplotlib.pyplot as plt
+import pandas as pd # Import pandas for creating a results DataFrame
+
+# Assuming X_train, X_test, y_train, y_test
+
+print("Training, Hyperparameter Tuning, and Evaluation of Models")
+model_results = {}
+
+#  Logistic Regression
+print("\n--- Logistic Regression ---")
+logistic_model = LogisticRegression(max_iter=1000)
+param_grid_lr = {'C': [0.001, 0.01, 0.1, 1, 10, 100]}
+grid_search_lr = GridSearchCV(logistic_model, param_grid_lr, cv=5, scoring='accuracy')
+grid_search_lr.fit(X_train, y_train)
+
+best_lr_model = grid_search_lr.best_estimator_
+y_pred_lr = best_lr_model.predict(X_test)
+y_prob_lr = best_lr_model.predict_proba(X_test)[:, 1] # Get probabilities for ROC curve
+
+# Calculate metrics
+accuracy_lr = accuracy_score(y_test, y_pred_lr)
+f1_lr = f1_score(y_test, y_pred_lr)
+recall_lr = recall_score(y_test, y_pred_lr)
+conf_matrix_lr = confusion_matrix(y_test, y_pred_lr)
+fpr_lr, tpr_lr, thresholds_lr = roc_curve(y_test, y_prob_lr)
+roc_auc_lr = auc(fpr_lr, tpr_lr)
+
+print("Best parameters for Logistic Regression:", grid_search_lr.best_params_)
+print("Logistic Regression Test Accuracy:", accuracy_lr)
+print("Logistic Regression Test F1 Score:", f1_lr)
+print("Logistic Regression Test Recall:", recall_lr)
+print("Logistic Regression Test ROC AUC:", roc_auc_lr)
+print("Classification Report for Logistic Regression:")
+print(classification_report(y_test, y_pred_lr))
+print("Confusion Matrix for Logistic Regression:")
+print(conf_matrix_lr)
+
+# results
+model_results['Logistic Regression'] = {
+    'Model': best_lr_model,
+    'Accuracy': accuracy_lr,
+    'F1 Score': f1_lr,
+    'Recall': recall_lr,
+    'ROC AUC': roc_auc_lr,
+    'Confusion Matrix': conf_matrix_lr,
+    'FPR': fpr_lr,
+    'TPR': tpr_lr
+}
+
+
+#  Support Vector Machine (SVM) 
+print("\n Support Vector Machine (SVM) ")
+svm_model = SVC(probability=True) 
+param_grid_svm = {'C': [1, 10], 'kernel': ['rbf'], 'gamma': ['scale']}
+grid_search_svm = GridSearchCV(svm_model, param_grid_svm, cv=3, scoring='accuracy')
+grid_search_svm.fit(X_train, y_train)
+
+best_svm_model = grid_search_svm.best_estimator_
+y_pred_svm = best_svm_model.predict(X_test)
+y_prob_svm = best_svm_model.predict_proba(X_test)[:, 1] 
+
+# Calculate metrics
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+f1_svm = f1_score(y_test, y_pred_svm)
+recall_svm = recall_score(y_test, y_pred_svm)
+conf_matrix_svm = confusion_matrix(y_test, y_pred_svm)
+fpr_svm, tpr_svm, thresholds_svm = roc_curve(y_test, y_prob_svm)
+roc_auc_svm = auc(fpr_svm, tpr_svm)
+
+print("Best parameters for SVM:", grid_search_svm.best_params_)
+print("SVM Test Accuracy:", accuracy_svm)
+print("SVM Test F1 Score:", f1_svm)
+print("SVM Test Recall:", recall_svm)
+print("SVM Test ROC AUC:", roc_auc_svm)
+print("Classification Report for SVM:")
+print(classification_report(y_test, y_pred_svm))
+print("Confusion Matrix for SVM:")
+print(conf_matrix_svm)
+
+# results
+model_results['SVM'] = {
+    'Model': best_svm_model,
+    'Accuracy': accuracy_svm,
+    'F1 Score': f1_svm,
+    'Recall': recall_svm,
+    'ROC AUC': roc_auc_svm,
+    'Confusion Matrix': conf_matrix_svm,
+    'FPR': fpr_svm,
+    'TPR': tpr_svm
+}
+
+
+#  Random Forest Classifier 
+print("\n Random Forest Classifier ")
+rf_model = RandomForestClassifier(random_state=42)
+param_grid_rf = {
+    'n_estimators': [100, 200],
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2]
+}
+grid_search_rf = GridSearchCV(rf_model, param_grid_rf, cv=3, scoring='accuracy')
+grid_search_rf.fit(X_train, y_train)
+
+best_rf_model = grid_search_rf.best_estimator_
+y_pred_rf = best_rf_model.predict(X_test)
+y_prob_rf = best_rf_model.predict_proba(X_test)[:, 1] 
+
+# Calculate metrics
+accuracy_rf = accuracy_score(y_test, y_pred_rf)
+f1_rf = f1_score(y_test, y_pred_rf)
+recall_rf = recall_score(y_test, y_pred_rf)
+conf_matrix_rf = confusion_matrix(y_test, y_pred_rf)
+fpr_rf, tpr_rf, thresholds_rf = roc_curve(y_test, y_prob_rf)
+roc_auc_rf = auc(fpr_rf, tpr_rf)
+
+print("Best parameters for Random Forest:", grid_search_rf.best_params_)
+print("Random Forest Test Accuracy:", accuracy_rf)
+print("Random Forest Test F1 Score:", f1_rf)
+print("Random Forest Test Recall:", recall_rf)
+print("Random Forest Test ROC AUC:", roc_auc_rf)
+print("Classification Report for Random Forest:")
+print(classification_report(y_test, y_pred_rf))
+print("Confusion Matrix for Random Forest:")
+print(conf_matrix_rf)
+
+# results
+model_results['Random Forest'] = {
+    'Model': best_rf_model,
+    'Accuracy': accuracy_rf,
+    'F1 Score': f1_rf,
+    'Recall': recall_rf,
+    'ROC AUC': roc_auc_rf,
+    'Confusion Matrix': conf_matrix_rf,
+    'FPR': fpr_rf,
+    'TPR': tpr_rf
+}
+
+#  XGBoost Classifier 
+print("\n XGBoost Classifier ")
+xgb_model = XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
+param_grid_xgb = {
+    'n_estimators': [100, 200],
+    'learning_rate': [0.01, 0.1],
+    'max_depth': [3, 5],
+    'subsample': [0.8, 1.0],
+    'colsample_bytree': [0.8, 1.0]
+}
+grid_search_xgb = GridSearchCV(xgb_model, param_grid_xgb, cv=3, scoring='accuracy')
+grid_search_xgb.fit(X_train, y_train)
+
+best_xgb_model = grid_search_xgb.best_estimator_
+y_pred_xgb = best_xgb_model.predict(X_test)
+y_prob_xgb = best_xgb_model.predict_proba(X_test)[:, 1] 
+
+# Calculate metrics
+accuracy_xgb = accuracy_score(y_test, y_pred_xgb)
+f1_xgb = f1_score(y_test, y_pred_xgb)
+recall_xgb = recall_score(y_test, y_pred_xgb)
+conf_matrix_xgb = confusion_matrix(y_test, y_pred_xgb)
+fpr_xgb, tpr_xgb, thresholds_xgb = roc_curve(y_test, y_prob_xgb)
+roc_auc_xgb = auc(fpr_xgb, tpr_xgb)
+
+print("Best parameters for XGBoost:", grid_search_xgb.best_params_)
+print("XGBoost Test Accuracy:", accuracy_xgb)
+print("XGBoost Test F1 Score:", f1_xgb)
+print("XGBoost Test Recall:", recall_xgb)
+print("XGBoost Test ROC AUC:", roc_auc_xgb)
+print("Classification Report for XGBoost:")
+print(classification_report(y_test, y_pred_xgb))
+print("Confusion Matrix for XGBoost:")
+print(conf_matrix_xgb)
+
+# results
+model_results['XGBoost'] = {
+    'Model': best_xgb_model,
+    'Accuracy': accuracy_xgb,
+    'F1 Score': f1_xgb,
+    'Recall': recall_xgb,
+    'ROC AUC': roc_auc_xgb,
+    'Confusion Matrix': conf_matrix_xgb,
+    'FPR': fpr_xgb,
+    'TPR': tpr_xgb
+}
+
+print("\n Model Training, Tuning, and Evaluation Complete ")
+
+#Compare Model Performance
+print("\nModel Performance Comparison")
+
+results_df = pd.DataFrame({
+    'Model': model_results.keys(),
+    'Accuracy': [result['Accuracy'] for result in model_results.values()],
+    'F1 Score': [result['F1 Score'] for result in model_results.values()],
+    'Recall': [result['Recall'] for result in model_results.values()],
+    'ROC AUC': [result['ROC AUC'] for result in model_results.values()]
+})
+results_df_sorted = results_df.sort_values(by='ROC AUC', ascending=False)
+
+print("\nModel Performance Summary (Sorted by ROC AUC):")
+print(results_df_sorted)
+
+# Select the best model based on a chosen metric
+best_model_name = results_df_sorted.iloc[0]['Model']
+best_model = model_results[best_model_name]['Model']
+
+print(f"\nBased on ROC AUC, the best performing model is: {best_model_name}")
+
+
+#  Visualize ROC Curves
+print("\nROC Curve Visualization")
+
+plt.figure(figsize=(10, 8))
+for model_name, result in model_results.items():
+    plt.plot(result['FPR'], result['TPR'], label=f'{model_name} (AUC = {result["ROC AUC"]:.2f})')
+
+plt.plot([0, 1], [0, 1], 'k--', label='Random Guessing (AUC = 0.50)')
+plt.xlabel('False Positive Rate (FPR)')
+plt.ylabel('True Positive Rate (TPR)')
+plt.title('ROC Curves for Different Models')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+print("\n Evaluation and Comparison Complete")
+
+
+
+/*5.DATA VISUALIZATION*/
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import roc_curve, auc
+print("--- Creating Visualizations ---")
+
+# Correlation Heatmap of Numerical Features
+print("\n Correlation Heatmap")
+numerical_df = df.select_dtypes(include=['number'])
+if 'Churn' in numerical_df.columns:
+    numerical_df = numerical_df.drop(columns=['Churn'])
+
+# Calculate the pairwise correlation between numerical columns
+if not numerical_df.empty:
+    correlation_matrix = numerical_df.corr()
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5)
+    plt.title('Correlation Matrix of Numerical Features')
+    plt.show()
+else:
+    print("No numerical features found for correlation heatmap after exclusions.")
+
+
+# Distribution Plots for Continuous Variables
+print("\n Distribution Plots for Continuous Variables")
+continuous_features = ['Age', 'Tenure', 'MonthlyCharges', 'TotalCharges']
+continuous_features = [col for col in continuous_features if col in df.columns and pd.api.types.is_numeric_dtype(df[col])]
+
+if continuous_features:
+    for feature in continuous_features:
+        plt.figure(figsize=(8, 5))
+        sns.histplot(df[feature], kde=True)
+        plt.title(f'Distribution of {feature}')
+        plt.xlabel(feature)
+        plt.ylabel('Frequency')
+        plt.show()
+else:
+    print("No continuous numerical features found for distribution plots.")
+
+
+# Churn vs. Non-Churn Bar Charts 
+print("\n Churn vs. Non-Churn Bar Charts ")
+categorical_features = df.select_dtypes(include=['object']).columns.tolist()
+
+if 'Churn' in categorical_features:
+    categorical_features.remove('Churn') # Remove target from features
+
+if categorical_features:
+    for feature in categorical_features:
+        plt.figure(figsize=(10, 6))
+        sns.countplot(data=df, x=feature, hue='Churn')
+        plt.title(f'Churn Distribution by {feature}')
+        plt.xlabel(feature)
+        plt.ylabel('Count')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+else:
+    print("No categorical features found for churn vs. non-churn bar charts after excluding target.")
+
+
+# ROC Curves for Model Comparison
+print("\n ROC Curves for Model Comparison ")
+
+# Assuming model_results dictionary is available from the previous step
+if 'model_results' in locals() and model_results:
+    plt.figure(figsize=(10, 8))
+    for model_name, result in model_results.items():
+        if 'FPR' in result and 'TPR' in result:
+             plt.plot(result['FPR'], result['TPR'], label=f'{model_name} (AUC = {result["ROC AUC"]:.2f})')
+        else:
+            print(f"Warning: ROC curve data not found for {model_name}. Skipping plot.")
+
+
+    plt.plot([0, 1], [0, 1], 'k--', label='Random Guessing (AUC = 0.50)')
+    plt.xlabel('False Positive Rate (FPR)')
+    plt.ylabel('True Positive Rate (TPR)')
+    plt.title('ROC Curves for Different Models')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+else:
+    print("Model results not available. Cannot plot ROC curves for comparison.")
+
+print("\n Visualization Complete ")
+
+
+
+
+/*6.ADVANCED INSIGHTS AND RECOMMENDATIONS*/
+import shap
+import matplotlib.pyplot as plt
+import pandas as pd
+print("--- SHAP Analysis for Model Interpretability ---")
+
+# Explain the Best Model using SHAP 
+
+# Initialize SHAP explainer
+if 'best_model_name' in locals() and best_model_name:
+    print(f"\nUsing SHAP to explain the best performing model: {best_model_name}")
+
+    try:
+        if isinstance(best_model, (RandomForestClassifier, XGBClassifier)):
+            explainer = shap.TreeExplainer(best_model)
+            if 'preprocessor' in locals():
+                 feature_names = preprocessor.get_feature_names_out()
+                 X_test_df = pd.DataFrame(X_test, columns=feature_names)
+            else:
+                 X_test_df = pd.DataFrame(X_test)
+
+            shap_values = explainer.shap_values(X_test_df)
+              if isinstance(shap_values, list):
+                shap_values = shap_values[1]
+
+        elif isinstance(best_model, LogisticRegression):
+           explainer = shap.LinearExplainer(best_model, X_train) # Use X_train for background data
+            if 'preprocessor' in locals():
+                 feature_names = preprocessor.get_feature_names_out()
+                 X_test_df = pd.DataFrame(X_test, columns=feature_names)
+            else:
+                 X_test_df = pd.DataFrame(X_test)
+
+            shap_values = explainer.shap_values(X_test_df)
+
+
+        elif isinstance(best_model, SVC) and hasattr(best_model, 'probability') and best_model.probability:
+            if X_train.shape[0] > 100:
+                 background_data = shap.kmeans(X_train, 10) 
+             else:
+                 background_data = X_train
+
+             if 'preprocessor' in locals():
+                 feature_names = preprocessor.get_feature_names_out()
+                 X_test_df = pd.DataFrame(X_test, columns=feature_names)
+             else:
+                 X_test_df = pd.DataFrame(X_test)
+
+             explainer = shap.KernelExplainer(best_model.predict_proba, background_data)
+             shap_values = explainer.shap_values(X_test_df)
+
+             if isinstance(shap_values, list):
+                 shap_values = shap_values[1] 
+
+        else:
+            print(f"SHAP explainer not readily available for model type: {type(best_model)}. Skipping SHAP analysis.")
+            shap_values = None 
+    except Exception as e:
+        print(f"An error occurred during SHAP explanation: {e}")
+        shap_values = None
+
+
+    # Visualizing SHAP Results
+
+    if shap_values is not None:
+        print("\n SHAP Summary Plot (Overall Feature Importance) ")
+        shap.summary_plot(shap_values, X_test_df)
+
+
+        print("\n SHAP Dependence Plots (Feature Interactions and Effects)")
+        if X_test_df.shape[1] > 0:
+             feature_order = X_test_df.columns[np.argsort(np.abs(shap_values).mean(0))[::-1]]
+             num_top_features_to_plot = min(3, len(feature_order)) # Plot at most 3 or fewer if less available
+             for i in range(num_top_features_to_plot):
+                 feature_name = feature_order[i]
+                 print(f"\nDependence plot for: {feature_name}")
+                 shap.dependence_plot(feature_name, shap_values, X_test_df, interaction_index=None)
+
+        print("\n SHAP Force Plot ")
+        instance_index_to_explain = 0
+        print(f"\nForce plot for instance {instance_index_to_explain}:")
+        shap.force_plot(explainer.expected_value, shap_values[instance_index_to_explain, :], X_test_df.iloc[instance_index_to_explain, :])
+        churned_indices = y_test[y_test == 1].index.intersection(X_test_df.index) # Find indices in both y_test and X_test_df
+        if not churned_indices.empty:
+            instance_index_to_explain_churn = churned_indices[0] 
+            print(f"\nForce plot for a predicted churn instance (index {instance_index_to_explain_churn}):")
+            shap.force_plot(explainer.expected_value, shap_values[X_test_df.index.get_loc(instance_index_to_explain_churn), :], X_test_df.iloc[X_test_df.index.get_loc(instance_index_to_explain_churn), :])
+        else:
+            print("\nNo instances predicted as churn in the test set to show a force plot for.")
+
+    else:
+         print("\nSHAP analysis was skipped due to unsupported model type or error.")
+
+else:
+    print("\nBest model not identified from previous steps. Cannot perform SHAP analysis.")
+
+print("\n Identifying Key Features for Churn")
+
+if 'shap_values' in locals() and shap_values is not None and X_test_df is not None:
+    mean_abs_shap_values = np.abs(shap_values).mean(0)
+
+    # Create a pandas Series for easier sorting and analysis
+    feature_importance_shap = pd.Series(mean_abs_shap_values, index=X_test_df.columns)
+
+    # Sort features by importance
+    feature_importance_shap_sorted = feature_importance_shap.sort_values(ascending=False)
+
+    print("\nTop 10 Key Features for Churn based on Mean Absolute SHAP Value:")
+    print(feature_importance_shap_sorted.head(10))
+
+    # Visualize feature importance
+    plt.figure(figsize=(10, 6))
+    feature_importance_shap_sorted.head(10).plot(kind='barh')
+    plt.title('Top 10 Features by Mean Absolute SHAP Value')
+    plt.xlabel('Mean Absolute SHAP Value')
+    plt.ylabel('Feature')
+    plt.gca().invert_yaxis() 
+    plt.show()
+
+else:
+    print("\nSHAP values or X_test_df not available. Cannot identify key features using SHAP.")
+
+
+print("\n Recommendations for Reducing Churn")
+
+if 'feature_importance_shap_sorted' in locals():
+    print("\nBased on the key features identified by SHAP analysis, here are some recommendations:")
+    top_features = feature_importance_shap_sorted.index.tolist()
+
+    print("\nGeneral Recommendations (based on top features):")
+    print("- **Focus on Customer Tenure:** Longer tenure is often associated with lower churn. Strategies to increase customer loyalty and retention over time are crucial.")
+    print("- **Analyze Monthly Charges and Total Charges:** Understand how billing amounts impact churn. Are there specific price points or changes that trigger churn? Consider pricing strategies or offering different plans.")
+    print("- **Investigate Specific Service Usage:** Identify which services (e.g., Internet Service, Online Security, Tech Support) are most influential on churn. Improve the quality or offering of services that have a high impact.")
+    print("- **Examine Payment Methods:** If certain payment methods are strongly linked to churn, understand the reasons (e.g., billing issues, convenience) and address them.")
+    print("- **Address Contract Terms:** Month-to-month contracts might have higher churn rates. Explore incentives for longer-term commitments.")
+    print("- **Improve Customer Support:** If features related to customer support (e.g., Tech Support) are important churn drivers, invest in improving the support experience.")
+
+    print("\nData-Driven Specific Recommendations (if possible to infer from feature names):")
+    print("\nTo develop more precise recommendations, further analysis of the relationship between specific feature values and churn is recommended (e.g., using dependence plots and domain knowledge).")
+else:
+    print("\nCould not generate recommendations as key features were not identified.")
+
+print("\n SHAP Analysis and Recommendations Complete")
+    
