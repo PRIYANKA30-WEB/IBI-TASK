@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/b76ffa72-2464-47aa-9d50-63aaf00fea25)# IBI-TASK
+
 
 
 NAME:GURUGUBELLI PRIYANKA
@@ -51,6 +51,7 @@ RESULTS:
   -Achieved highest performance with:XG Boost
   -Top features influencing churn: Contract Type, Tenure, Monthly Charges, etc.
   -SHAP visualizations revealed clear patterns in high-risk churn groups.
+  ![image](https://github.com/user-attachments/assets/b76ffa72-2464-47aa-9d50-63aaf00fea25
   
 
 
